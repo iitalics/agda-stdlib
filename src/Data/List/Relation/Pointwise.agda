@@ -11,12 +11,14 @@ module Data.List.Relation.Pointwise where
 open import Function
 open import Function.Inverse using (Inverse)
 open import Data.Product hiding (map)
-open import Data.List.Base hiding (map ; head ; tail)
+open import Data.List.Base as List hiding (map; head; tail)
 open import Data.Fin using (Fin) renaming (zero to fzero; suc to fsuc)
 open import Data.Nat using (ℕ; zero; suc)
 open import Level
 open import Relation.Nullary
 import Relation.Nullary.Decidable as Dec using (map′)
+open import Relation.Nullary.Negation using (contradiction)
+open import Relation.Unary hiding (_⇒_; Irrelevant) renaming (Decidable to Decidable₁)
 open import Relation.Binary renaming (Rel to Rel₂)
 open import Relation.Binary.PropositionalEquality as P using (_≡_)
 
@@ -82,10 +84,10 @@ transitive trans []            []            = []
 transitive trans (x∼y ∷ xs∼ys) (y∼z ∷ ys∼zs) =
   trans x∼y y∼z ∷ transitive trans xs∼ys ys∼zs
 
-antisymmetric : ∀ {a ℓ₁ ℓ₂} {A : Set a}
-                {_≈_ : Rel₂ A ℓ₁} {_≤_ : Rel₂ A ℓ₂} →
-                Antisymmetric _≈_ _≤_ →
-                Antisymmetric (Pointwise _≈_) (Pointwise _≤_)
+antisymmetric : ∀ {a b ℓ₁ ℓ₂ ℓ₃} {A : Set a} {B : Set b}
+                {_≤₁_ : REL A B ℓ₁} {_≤₂_ : REL B A ℓ₂} {_≈_ : REL A B ℓ₃} →
+                Antisym _≤₁_ _≤₂_ _≈_ →
+                Antisym (Pointwise _≤₁_) (Pointwise _≤₂_) (Pointwise _≈_)
 antisymmetric antisym []            []            = []
 antisymmetric antisym (x∼y ∷ xs∼ys) (y∼x ∷ ys∼xs) =
   antisym x∼y y∼x ∷ antisymmetric antisym xs∼ys ys∼xs
@@ -216,6 +218,76 @@ module _ {a b ℓ} {A : Set a} {B : Set b} {_∼_ : REL A B ℓ} where
                      length xs ≡ length ys
   Pointwise-length []            = P.refl
   Pointwise-length (x∼y ∷ xs∼ys) = P.cong ℕ.suc (Pointwise-length xs∼ys)
+
+------------------------------------------------------------------------
+-- reverse
+
+module _ {a b ℓ} {A : Set a} {B : Set b} {_∼_ : REL A B ℓ} where
+
+  reverseAcc⁺ : ∀ {xs ys xs′ ys′} → Pointwise _∼_ xs′ ys′ → Pointwise _∼_ xs ys →
+                Pointwise _∼_ (reverseAcc xs′ xs) (reverseAcc ys′ ys)
+  reverseAcc⁺ acc []            = acc
+  reverseAcc⁺ acc (x∼y ∷ xs∼ys) = reverseAcc⁺ (x∼y ∷ acc) xs∼ys
+
+  reverse⁺ : ∀ {xs ys} → Pointwise _∼_ xs ys → Pointwise _∼_ (reverse xs) (reverse ys)
+  reverse⁺ = reverseAcc⁺ []
+
+------------------------------------------------------------------------
+-- map
+
+module _ {a b c d ℓ} {A : Set a} {B : Set b} {C : Set c} {D : Set d}
+         {_∼_ : REL C D ℓ} where
+
+  map⁺ : ∀ {as bs} (f : A → C) (g : B → D) →
+            Pointwise (λ a b → f a ∼ g b) as bs →
+            Pointwise _∼_ (List.map f as) (List.map g bs)
+  map⁺ f g []       = []
+  map⁺ f g (r ∷ rs) = r ∷ map⁺ f g rs
+
+  map⁻ : ∀ {as bs} (f : A → C) (g : B → D) →
+            Pointwise _∼_ (List.map f as) (List.map g bs) →
+            Pointwise (λ a b → f a ∼ g b) as bs
+  map⁻ {[]} {[]} f g [] = []
+  map⁻ {[]} {b ∷ bs} f g rs with Pointwise-length rs
+  ... | ()
+  map⁻ {a ∷ as} {[]} f g rs with Pointwise-length rs
+  ... | ()
+  map⁻ {a ∷ as} {b ∷ bs} f g (r ∷ rs) = r ∷ map⁻ f g rs
+
+------------------------------------------------------------------------
+-- filter
+
+module _ {a b r p q} {A : Set a} {B : Set b} {_∼_ : REL A B r}
+         {P : Pred A p} {Q : Pred B q} (P? : Decidable₁ P) (Q? : Decidable₁ Q)
+         (P⇒Q : ∀ {a b} → a ∼ b → P a → Q b) (Q⇒P : ∀ {a b} → a ∼ b → Q b → P a)
+         where
+
+  filter⁺ : ∀ {xs ys} → Pointwise _∼_ xs ys → Pointwise _∼_ (filter P? xs) (filter Q? ys)
+  filter⁺ []       = []
+  filter⁺ {x ∷ _} {y ∷ _} (x∼y ∷ xs∼ys) with P? x | Q? y
+  ... | yes p | yes q = x∼y ∷ filter⁺ xs∼ys
+  ... | yes p | no ¬q = contradiction (P⇒Q x∼y p) ¬q
+  ... | no ¬p | yes q = contradiction (Q⇒P x∼y q) ¬p
+  ... | no ¬p | no ¬q = filter⁺ xs∼ys
+
+------------------------------------------------------------------------
+-- replicate
+
+module _ {a b ℓ} {A : Set a} {B : Set b} {_∼_ : REL A B ℓ} where
+
+  replicate⁺ : ∀ {x y} n → x ∼ y → Pointwise _∼_ (replicate n x) (replicate n y)
+  replicate⁺ 0       x∼y = []
+  replicate⁺ (suc n) x∼y = x∼y ∷ replicate⁺ n x∼y
+
+------------------------------------------------------------------------
+-- Irrelevant
+
+module _ {a b ℓ} {A : Set a} {B : Set b} {_∼_ : REL A B ℓ} where
+
+  irrelevant : Irrelevant _∼_ → Irrelevant (Pointwise _∼_)
+  irrelevant irr []       []         = P.refl
+  irrelevant irr (r ∷ rs) (r₁ ∷ rs₁) =
+    P.cong₂ _∷_ (irr r r₁) (irrelevant irr rs rs₁)
 
 ------------------------------------------------------------------------
 -- Properties of propositional pointwise
