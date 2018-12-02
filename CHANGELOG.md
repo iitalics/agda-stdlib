@@ -613,6 +613,17 @@ Other minor additions
   ++-magma   : Magma _ _
   ```
 
+* Added new proofs to `Data.List.Relation.Pointwise`:
+  ```agda
+  reverseAcc⁺ : Pointwise _∼_ xs′ ys′ → Pointwise _∼_ xs ys → Pointwise _∼_ (reverseAcc xs′ xs) (reverseAcc ys′ ys)
+  reverse⁺ : Pointwise _∼_ xs ys → Pointwise _∼_ (reverse xs) (reverse ys)
+  map⁺ : Pointwise (λ a b → f a ∼ g b) as bs → Pointwise _∼_ (List.map f as) (List.map g bs)
+  map⁻ : Pointwise _∼_ (List.map f as) (List.map g bs) → Pointwise (λ a b → f a ∼ g b) as bs
+  filter⁺ : Pointwise _∼_ xs ys → Pointwise _∼_ (filter P? xs) (filter Q? ys)
+  replicate⁺ : ∀ n → x ∼ y → Pointwise _∼_ (replicate n x) (replicate n y)
+  irrelevant : Irrelevant _∼_ → Irrelevant (Pointwise _∼_)
+  ```
+
 * Added new proofs to `Data.Maybe.All`:
   ```agda
   drop-just        : All P (just x) → P x
