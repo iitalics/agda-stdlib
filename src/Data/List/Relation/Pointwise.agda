@@ -224,6 +224,11 @@ module _ {a b ℓ} {A : Set a} {B : Set b} {_∼_ : REL A B ℓ} where
 
 module _ {a b ℓ} {A : Set a} {B : Set b} {_∼_ : REL A B ℓ} where
 
+  -- TODO: remove this definition when #529 is merged
+  private
+    reverseAcc : ∀ {c} {C : Set c} → List C → List C → List C
+    reverseAcc = foldl (flip _∷_)
+
   reverseAcc⁺ : ∀ {xs ys xs′ ys′} → Pointwise _∼_ xs′ ys′ → Pointwise _∼_ xs ys →
                 Pointwise _∼_ (reverseAcc xs′ xs) (reverseAcc ys′ ys)
   reverseAcc⁺ acc []            = acc
