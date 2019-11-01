@@ -13,7 +13,8 @@ open import Data.Empty using (⊥-elim)
 open import Data.Fin as Fin using (Fin; zero; suc; toℕ; fromℕ)
 open import Data.List.Base as List using (List)
 open import Data.Nat
-open import Data.Nat.Properties using (+-assoc; ≤-step)
+open import Data.Nat.Properties as ℕₚ
+  using (+-assoc; ≤-step; +-identityʳ)
 open import Data.Product as Prod
   using (_×_; _,_; proj₁; proj₂; <_,_>; uncurry)
 open import Data.Vec
@@ -22,7 +23,7 @@ open import Function.Inverse using (_↔_; inverse)
 open import Level using (Level)
 open import Relation.Binary as B hiding (Decidable)
 open import Relation.Binary.PropositionalEquality as P
-  using (_≡_; _≢_; refl; _≗_; cong₂)
+  using (_≡_; _≢_; refl; _≗_; cong₂; subst)
 open import Relation.Unary using (Pred; Decidable)
 open import Relation.Nullary using (Dec; yes; no)
 open import Relation.Nullary.Decidable using (map′)
@@ -338,6 +339,24 @@ lookup-++ʳ : ∀ {m n} (xs : Vec A m) (ys : Vec A n) i →
 lookup-++ʳ []       ys       zero    = refl
 lookup-++ʳ []       (y ∷ xs) (suc i) = lookup-++ʳ [] xs i
 lookup-++ʳ (x ∷ xs) ys       i       = lookup-++ʳ xs ys i
+
+++-identityʳ : ∀ {n} (xs : Vec A n) →
+               subst (Vec A) (+-identityʳ n) (xs ++ []) ≡ xs
+++-identityʳ [] = refl
+++-identityʳ {A = A} {suc n} (x ∷ xs) = begin
+  subst (Vec A) (P.cong suc e) (x ∷ xs ++ [])
+    ≡⟨ P.sym (P.subst-∘ e) ⟩
+  subst (Vec A ∘ suc) e (x ∷ xs ++ [])
+    ≡⟨ P.subst-application (Vec A) (λ _ → x ∷_) e ⟩
+  x ∷ subst (Vec A) (P.cong id e) (xs ++ [])
+    ≡⟨ P.cong (λ z → x ∷ subst (Vec A) z (xs ++ [])) $
+        P.cong-id (+-identityʳ n) ⟩
+  x ∷ subst (Vec A) e (xs ++ [])
+    ≡⟨ P.cong (x ∷_) (++-identityʳ xs) ⟩
+  x ∷ xs
+    ∎
+  where open P.≡-Reasoning
+        e = +-identityʳ n
 
 ------------------------------------------------------------------------
 -- zipWith
