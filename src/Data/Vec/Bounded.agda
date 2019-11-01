@@ -50,3 +50,6 @@ module _ {P : Pred A p} (P? : Decidable P) where
 
   dropWhile : ∀ {n} → Vec≤ A n → Vec≤ A n
   dropWhile = lift′ (Vec.dropWhile P?)
+
+  reverse : ∀ {n} → Vec≤ A n → Vec≤ A n
+  reverse (v , p) = Vec.reverse v , p

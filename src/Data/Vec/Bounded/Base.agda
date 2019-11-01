@@ -64,9 +64,6 @@ a ∷ (as , p) = a Vec.∷ as , s≤s p
 map : (A → B) → ∀ {n} → Vec≤ A n → Vec≤ B n
 map f (v , p) = Vec.map f v , p
 
-reverse : ∀ {n} → Vec≤ A n → Vec≤ A n
-reverse (v , p) = Vec.reverse v , p
-
 -- Align and Zip.
 
 alignWith : (These A B → C) → ∀ {n} → Vec≤ A n → Vec≤ B n → Vec≤ C n

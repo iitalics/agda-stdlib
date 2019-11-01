@@ -258,16 +258,17 @@ fromList List.[]         = []
 fromList (List._∷_ x xs) = x ∷ fromList xs
 
 ------------------------------------------------------------------------
--- Operations for reversing vectors
+-- Operatios on the last element of a vectors
 
-reverse : ∀ {n} → Vec A n → Vec A n
-reverse {A = A} = foldl (Vec A) (λ rev x → x ∷ rev) []
+-- Snoc
 
 infixl 5 _∷ʳ_
 
 _∷ʳ_ : ∀ {n} → Vec A n → A → Vec A (1 + n)
 []       ∷ʳ y = [ y ]
 (x ∷ xs) ∷ʳ y = x ∷ (xs ∷ʳ y)
+
+-- Backwards initialisation
 
 initLast : ∀ {n} (xs : Vec A (1 + n)) →
            ∃₂ λ (ys : Vec A n) (y : A) → xs ≡ ys ∷ʳ y

@@ -55,3 +55,6 @@ module _ {P : A → Set p} (P? : Decidable P) where
   dropWhile (a Vec.∷ as) with P? a
   ... | yes p = ≤-cast (ℕₚ.n≤1+n _) (dropWhile as)
   ... | no ¬p = fromVec (a Vec.∷ as)
+
+reverse : ∀ {n} → Vec A n → Vec A n
+reverse {A = A} = foldl (Vec A) (λ rev x → x ∷ rev) []
