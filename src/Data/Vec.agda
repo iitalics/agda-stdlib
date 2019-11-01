@@ -17,11 +17,13 @@
 module Data.Vec where
 
 open import Level
+open import Data.Nat.Base using (suc; _+_)
 import Data.Nat.Properties as ℕₚ
 open import Data.Vec.Bounded.Base as Vec≤
   using (Vec≤; ≤-cast; fromVec)
-open import Relation.Nullary
-open import Relation.Unary
+open import Relation.Binary.PropositionalEquality as P using (_≡_; refl)
+open import Relation.Nullary using (yes; no; recompute)
+open import Relation.Unary using (Decidable)
 
 private
   variable
@@ -56,5 +58,18 @@ module _ {P : A → Set p} (P? : Decidable P) where
   ... | yes p = ≤-cast (ℕₚ.n≤1+n _) (dropWhile as)
   ... | no ¬p = fromVec (a Vec.∷ as)
 
+-- "Reverse append" xs ʳ++ ys = reverse xs ++ ys
+
+infixr 5 _⊢_ʳ++_ _ʳ++_
+
+_⊢_ʳ++_ : ∀ {n m k} → .(n + m ≡ k) → Vec A n → Vec A m → Vec A k
+eq ⊢ []     ʳ++ ys = P.subst (Vec _) (recompute (_ ℕₚ.≟ _) eq) ys
+eq ⊢ x ∷ xs ʳ++ ys = P.trans (ℕₚ.+-suc _ _) eq ⊢ xs ʳ++ x ∷ ys
+
+_ʳ++_ : ∀ {n m} → Vec A n → Vec A m → Vec A (n + m)
+_ʳ++_ = refl ⊢_ʳ++_
+
+-- Reverse
+
 reverse : ∀ {n} → Vec A n → Vec A n
-reverse {A = A} = foldl (Vec A) (λ rev x → x ∷ rev) []
+reverse {n = n} xs = ℕₚ.+-identityʳ n ⊢ xs ʳ++ []
