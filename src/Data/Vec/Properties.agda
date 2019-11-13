@@ -399,6 +399,49 @@ subst-ʳ++ : ∀ {n m k} (xs : Vec A n) (ys : Vec A m) (e : n + m ≡ k) →
             e ⊢ xs ʳ++ ys ≡ P.subst (Vec A) e (xs ʳ++ ys)
 subst-ʳ++ xs ys refl = refl
 
+------------------------------------------------------------------------------
+-- reverse
+
+reverse-map-commute : ∀ (f : A → B) {n} (xs : Vec A n) →
+                      map f (reverse xs) ≡ reverse (map f xs)
+reverse-map-commute f {n} xs = ʳ++-map-commute f xs [] (ℕₚ.+-identityʳ n)
+
+reverse-involutive : ∀ {n} → Involutive {A = Vec A n} _≡_ reverse
+reverse-involutive {A = A} xs = begin
+  reverse (reverse xs)  ≡⟨ subst-ʳ++ (reverse xs) [] e ⟩
+  S (reverse xs ʳ++ []) ≡⟨ P.cong S $ ʳ++-commute xs [] [] e ⟩
+  S (([] ʳ++ xs) ++ []) ≡⟨ P.cong (S ∘ (_++ [])) $ ʳ++-identityˡ xs ⟩
+  S (xs ++ [])          ≡⟨ ++-identityʳ xs ⟩
+  xs                     ∎
+  where open P.≡-Reasoning
+        e = ℕₚ.+-identityʳ _
+        S = P.subst (Vec A) e
+
+reverse-++-commute : ∀ {n m} (xs : Vec A n) (ys : Vec A m) →
+                     P.subst (Vec A) (ℕₚ.+-comm n m) (reverse (xs ++ ys))
+                     ≡ reverse ys ++ reverse xs
+reverse-++-commute {A = A} {n} {m} xs ys = begin
+  S₁ (rev (xs ++ ys))     ≡⟨ P.cong S₁ lemma ⟩
+  S₁ (S₃ (ys ʳ++ rev xs)) ≡⟨ P.trans (P.subst-subst e₃ {e₁}) $
+                             P.cong (λ e → P.subst (Vec A) e (ys ʳ++ rev xs)) $
+                             ℕₚ.≡-irrelevant (P.trans e₃ e₁) refl  ⟩
+  ys ʳ++ rev xs           ≡⟨ ʳ++-defn ys (rev xs) ⟩
+  rev ys ++ rev xs         ∎
+  where
+  open P.≡-Reasoning
+  rev = reverse
+  e₁ = ℕₚ.+-comm n m          ; S₁ = P.subst (Vec A) e₁
+  e₂ = ℕₚ.+-identityʳ (n + m) ; S₂ = P.subst (Vec A) e₂
+  e₃ = ℕₚ.+-comm m n          ; S₃ = P.subst (Vec A) e₃
+  lemma = begin
+    rev (xs ++ ys)                  ≡⟨ P.sym $ P.cong (rev ∘ (_++ ys)) $ reverse-involutive xs ⟩
+    rev (rev (rev xs) ++ ys)        ≡⟨ P.sym $ P.cong rev $ ʳ++-defn (rev xs) ys ⟩
+    rev (rev xs ʳ++ ys)             ≡⟨ subst-ʳ++ (rev xs ʳ++ ys) [] e₂ ⟩
+    S₂ ((rev xs ʳ++ ys) ʳ++ [])     ≡⟨ P.cong S₂ $ ʳ++-commute (rev xs) ys [] refl ⟩
+    S₂ ((e₃ ⊢ ys ʳ++ rev xs) ++ []) ≡⟨ ++-identityʳ (e₃ ⊢ ys ʳ++ rev xs) ⟩
+    e₃ ⊢ ys ʳ++ rev xs              ≡⟨ subst-ʳ++ ys (rev xs) e₃ ⟩
+    S₃ (ys ʳ++ rev xs)               ∎
+
 ------------------------------------------------------------------------
 -- zipWith
 
