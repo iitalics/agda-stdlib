@@ -359,6 +359,47 @@ lookup-++ʳ (x ∷ xs) ys       i       = lookup-++ʳ xs ys i
         e = +-identityʳ n
 
 ------------------------------------------------------------------------
+-- _⊢_ʳ++_ and _ʳ++_
+
+private
+  +-sucˡ : ∀ {x y z} → suc (x + y) ≡ z → x + suc y ≡ z
+  +-sucˡ e = P.trans (ℕₚ.+-suc _ _) e
+
+-- (xs ʳ++ ys) ++ zs ≡ xs ʳ++ (ys ++ zs)
+ʳ++-++-assoc : ∀ {n m o k} (xs : Vec A n) (ys : Vec A m) (zs : Vec A o) →
+               (e₁ : n + m ≡ k) →
+               (e₂ : n + (m + o) ≡ k + o) →
+               (e₁ ⊢ xs ʳ++ ys) ++ zs ≡ e₂ ⊢ xs ʳ++ (ys ++ zs)
+ʳ++-++-assoc {m = m} {o} [] ys zs refl e₂
+  rewrite ℕₚ.≟-diag {n = m} refl | ℕₚ.≟-diag {n = m + o} refl = refl
+ʳ++-++-assoc (x ∷ xs) ys zs e₁ e₂ =
+  ʳ++-++-assoc xs (x ∷ ys) zs (+-sucˡ e₁) (+-sucˡ e₂)
+
+ʳ++-defn : ∀ {n m} (xs : Vec A n) (ys : Vec A m) → xs ʳ++ ys ≡ reverse xs ++ ys
+ʳ++-defn xs ys = P.sym $ ʳ++-++-assoc xs [] ys (ℕₚ.+-identityʳ _) refl
+
+-- (xs ʳ++ ys) ʳ++ zs ≡ (ys ʳ++ xs) ++ zs
+ʳ++-commute : ∀ {n m o k} (xs : Vec A n) (ys : Vec A m) (zs : Vec A o)
+              (e : n + m ≡ k) (let e′ = P.trans (ℕₚ.+-comm m n) e) →
+              (e ⊢ xs ʳ++ ys) ʳ++ zs ≡ (e′ ⊢ ys ʳ++ xs) ++ zs
+ʳ++-commute {m = m} [] ys zs refl rewrite ℕₚ.≟-diag {n = m} refl = ʳ++-defn ys zs
+ʳ++-commute (x ∷ xs) ys zs e = ʳ++-commute xs (x ∷ ys) zs (+-sucˡ e)
+
+-- map f (xs ʳ++ ys) ≡ map f xs ʳ++ map f ys
+ʳ++-map-commute : ∀ (f : A → B) {n m k} (xs : Vec A n) (ys : Vec A m)
+                  (e : n + m ≡ k) →
+                  map f (e ⊢ xs ʳ++ ys) ≡ e ⊢ map f xs ʳ++ map f ys
+ʳ++-map-commute f {m = m} [] ys refl rewrite ℕₚ.≟-diag {n = m} refl = refl
+ʳ++-map-commute f (x ∷ xs) ys e = ʳ++-map-commute f xs (x ∷ ys) (+-sucˡ e)
+
+ʳ++-identityˡ : ∀ {n} (xs : Vec A n) → [] ʳ++ xs ≡ xs
+ʳ++-identityˡ xs = ʳ++-defn [] xs
+
+subst-ʳ++ : ∀ {n m k} (xs : Vec A n) (ys : Vec A m) (e : n + m ≡ k) →
+            e ⊢ xs ʳ++ ys ≡ P.subst (Vec A) e (xs ʳ++ ys)
+subst-ʳ++ xs ys refl = refl
+
+------------------------------------------------------------------------
 -- zipWith
 
 module _ {f : A → A → A} where
